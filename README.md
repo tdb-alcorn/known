@@ -1,41 +1,38 @@
 # known
 
-Known application for IndieHosters network
+My deploy setup for Known on AWS.
 
-# How to use this image
+# How To
 
-The easiest is to use our `docker-compose.yml`.
+1. Deploy ec2 instance
+2. Attach EFS volume at ~/data
+3. Get parameters for reaching RDS database
+4. Install docker, docker-compose on ec2 instance
+5. Move this repo to this instance
+6. scp the env file to this instance
+7. Ensure letsencrypt certs are up to date
+8. Run `docker-compose up -d`
 
-Make sure you have [docker-compose](http://docs.docker.com/compose/install/) installed. And then:
+You can now access the Known instance at 80 and 443 on the machine.
 
-```
-git clone https://github.com/indiehosters/known.git
-cd known
-# edit variables:
-vi env
-docker-compose up
-```
+## Encryption
 
-You can now access your instance on the port 80 of the IP of your machine.
+Copy fullchain.pem and privkey.pem from /etc/letsencrypt/archive/$DOMAIN/ to
+./certs (remove the trailing numbers from the file names). These will be passed
+into the NGINX container.
 
-## Access it from Internet
+TODO: Periodically check validity of certs and re-run certbot if they expire.
 
-We recommend the usage of SSL, so the easiest is to modify the `nginx.conf` file.
+## Docker + VPC wrinkles
 
-Once it is done, you can connect to the port of the host by adding this line to `docker-compose.yml`:
-```
-web:
-...
-  - ports:
-    - "443:443"
-    - "80:80"
-...
-```
+To reach other instances on the VPC (e.g. the database) Docker must be told to
+use the VPC's DNS server; by default it uses Google's public DNS at 8.8.8.8. Go
+to the docker options file (for ec2 this is `/etc/sysconfig/docker`) and change
+the `OPTIONS` line to include `--dns 172.31.0.2 --dns 8.8.8.8 --dns 8.8.4.4`.
+Amazon VPC DNS servers are usually at the base of the IP range +2 e.g. if the
+VPC has block 172.31.0.0/16 then it will be at 172.31.0.2.
 
-## Installation
-
-Once started, you'll arrive at the configuration wizzard.
-
-## Backup
-
-In order to backup, just run the `./BACKUP` script. And copy all the data to a safe place.
+[Amazon Docker
+Troubleshooting](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/troubleshooting.html#docker-debug-mode)
+[Amazon VPC
+DNS](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_DHCP_Options.html#AmazonDNS)

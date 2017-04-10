@@ -1,9 +1,4 @@
 version: '2'
-networks:
-  lb_web:
-    external: true
-  back:
-    driver: bridge
 services:
   app:
     image: indiehosters/known
@@ -11,8 +6,6 @@ services:
       - ./data:/var/www/html/Uploads
     env_file:
       - ./env
-    networks:
-    - back
   web:
     image: nginx
     ports:
@@ -20,12 +13,10 @@ services:
       - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/secrets:ro
     links:
       - app
     volumes_from:
       - app
     environment:
       - VIRTUAL_HOST
-    networks:
-    - back
-    - lb_web
